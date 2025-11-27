@@ -9,7 +9,8 @@ git clone https://oauth2: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@github.com/rom
 
 echo "Installation des dépendances..."
 pip install --upgrade pip
-pip install streamlit requests
+pip install -r requirements.txt
 
 echo "Lancement de l'application Streamlit..."
 streamlit run app.py
+
