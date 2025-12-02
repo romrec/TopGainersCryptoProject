@@ -19,7 +19,7 @@ def init_db():  # Init DB table
     ''')
     conn.commit()  # Save changes
     conn.close()  # Close conn
-    logging.info("Database initialized.")  # Log init
+    logging.info("Base de données initialisée.")  # Log init
 
 def save_to_db(symbol, name, price, volume, change_24h):  # Insert record
     try:
@@ -31,6 +31,6 @@ def save_to_db(symbol, name, price, volume, change_24h):  # Insert record
         ''', (symbol, name, price, volume, change_24h))  # Params
         conn.commit()  # Commit insert
         conn.close()  # Close conn
-        logging.info(f"Saved {symbol} to DB.")  # Log save
+        logging.info(f"Sauvegardé {symbol} en DB.")  # Log save
     except Exception as e:  # Handle error
-        logging.error(f"Error saving to DB: {e}")  # Log error
+        logging.error(f"Erreur sauvegarde en DB: {e}")  # Log error

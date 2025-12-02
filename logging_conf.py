@@ -16,7 +16,7 @@ RESPONSE_TIME = Histogram('app_response_time_seconds', 'Response time', buckets=
 
 def log_access():  # Increment access
     ACCESS_COUNTER.inc()  # Inc counter
-    logging.info("Access logged")  # Log info
+    logging.info("Accès enregistré")  # Log info
 
 def log_error(msg):  # Increment error
     ERROR_COUNTER.inc()  # Inc counter
