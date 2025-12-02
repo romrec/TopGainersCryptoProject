@@ -1,64 +1,70 @@
-import streamlit as st  # Interface
-import sqlite3  # DB
-from top_movers import get_top_movers  # Message
-from db import init_db, save_to_db  # Init et save DB
-from logging_conf import log_access, log_error, RESPONSE_TIME, start_http_server  # Logs et metrics
-import time  # Timing
+import streamlit as st
+import sqlite3
+from top_movers import get_top_movers
+from db import init_db, save_to_db
+from logging_conf import log_access, log_error, RESPONSE_TIME, start_http_server
+import time
+import logging  # Add logging import for warning
 
 # Initialize DB
-init_db()  # Init DB
+init_db()
 
-# Start Prometheus server for metrics
-start_http_server(8000)  # Démarre metrics server
+# Start Prometheus server for metrics (skip if port occupied)
+try:
+    start_http_server(8000)
+except OSError as e:
+    logging.warning(f"Impossible démarrer serveur Prometheus : {e}")
 
-st.title("Top Movers Crypto")  # Titre
-st.write("Affichage des top gainer crypto avec stockage DB, monitoring et stats.")  # Desc
+st.title("Top Movers Crypto")
+st.write("Affichage des top gainer crypto avec stockage DB, monitoring et stats.")
 
-log_access()  # Log access
+log_access()
 
-start_time = time.time()  # Debut timing
-movers = get_top_movers()  # Recup données API
-RESPONSE_TIME.observe(time.time() - start_time)  # Observe response time
+start_time = time.time()
+movers = get_top_movers()
+RESPONSE_TIME.observe(time.time() - start_time)
 
 # Afficher statistiques
-st.header("📊 Statistiques et Supervision")  # Header stats
-st.write("Données sauvegardées : ")  # Title section
-conn = sqlite3.connect('/app/data/crypto_data.db')  # Connect DB
-cursor = conn.cursor()  # Curseur
-cursor.execute("SELECT COUNT(*) FROM top_movers")  # Count records
-count = cursor.fetchone()[0]  # Get count
-st.write(f"📖 Nombre d'enregistrements en base : {count}")  # Display count
+st.header("📊 Statistiques et Supervision")
+st.write("Données sauvegardées : ")
+conn = sqlite3.connect('/app/data/crypto_data.db')
+cursor = conn.cursor()
+cursor.execute("SELECT COUNT(*) FROM top_movers")
+count = cursor.fetchone()[0]
+st.write(f"📖 Nombre d'enregistrements en base : {count}")
 
 # Afficher dernières sauvegardes
-st.subheader("💾 Dernières données sauvegardées")  # Subheader
-cursor2 = conn.cursor()  # Cursor2
-cursor2.execute("SELECT symbol, name, price, volume, change_24h, timestamp FROM top_movers ORDER BY timestamp DESC LIMIT 10")  # Select last 10
-rows = cursor2.fetchall()  # Fetch rows
-cursor2.close()  # Close cursor
-conn.close()  # Close conn
+st.subheader("💾 Dernières données sauvegardées")
+# Requery for table
+cursor2 = conn.cursor()
+cursor2.execute("SELECT symbol, name, price, volume, change_24h, timestamp FROM top_movers ORDER BY timestamp DESC LIMIT 10")
+rows = cursor2.fetchall()
+cursor2.close()
+conn.close()
 
-if rows:  # If data
-    st.table([{"Symbole": row[0], "Nom": row[1], "Prix": f"${row[2]:.4f}", "Volume": f"{row[3]:.0f}", "Changement 24h": f"{row[4]:.2f}%", "Timestamp": row[5]} for row in rows])  # Table
+if rows:
+    st.table([{"Symbole": row[0], "Nom": row[1], "Prix": f"${row[2]:.4f}", "Volume": f"{row[3]:.0f}", "Changement 24h": f"{row[4]:.2f}%", "Timestamp": row[5]} for row in rows])
 else:
-    st.write("Aucune donnée sauvegardée.")  # No data
+    st.write("Aucune donnée sauvegardée.")
 
-st.write("🕒 Temps de réponse API : DEMO - 0.5s (avec Prometheus tracking)")  # Demo time
-st.write("🚨 Logs récents : Démonstration - Accès réussi, données sauvegardées")  # Demo logs
+st.write("🕒 Temps de réponse API : DEMO - 0.5s (avec Prometheus tracking)")
 
-if movers:  # If api data
-    st.header("💰 Top 10 Gainers (données sauvegardées en DB)")  # Header
-    for i, coin in enumerate(movers, 1):  # Loop coins
-        symbol = coin['symbol'].upper()  # Get symbol
-        name = coin['name']  # Get name
-        price = coin['current_price']  # Get price
-        volume = coin['total_volume']  # Get volume
-        change = coin['price_change_percentage_24h']  # Get change
+st.write("🚨 Logs récents : Démonstration - Accès réussi, données sauvegardées")
+
+if movers:
+    st.header("💰 Top 10 Gainers (données sauvegardées en DB)")
+    for i, coin in enumerate(movers, 1):
+        symbol = coin['symbol'].upper()
+        name = coin['name']
+        price = coin['current_price']
+        volume = coin['total_volume']
+        change = coin['price_change_percentage_24h']
+        color = "red" if change > 0 else "green"
 
         # Save to DB
-        save_to_db(symbol, name, price, volume, change)  # Persist
+        save_to_db(symbol, name, price, volume, change)
 
-        color = "red" if change > 0 else "green"  # Color for change
-        st.markdown(f"{i}. **{name} ({symbol})**: ${price:.4f}, Vol:{volume:.0f}, <span style='color:{color};'>(+{change:.2f}%)</span>", unsafe_allow_html=True)  # Display
+        st.markdown(f"{i}. **{name} ({symbol})**: ${price:.4f}, Vol:{volume:.0f}, <span style='color:{color};'>(+{change:.2f}%)</span>", unsafe_allow_html=True)
 else:
-    st.write("Erreur : Impossible de récupérer les données depuis l'API.")  # Error UI
-    log_error("Échec récupération données API")  # Log error
+    st.write("Impossible de récupérer les données.")
+    log_error("Échec récupération données API")
