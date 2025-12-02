@@ -25,7 +25,7 @@ def save_to_db(symbol, name, price, volume, change_24h):  # Sauvegarde des donn√
     try:
         conn = sqlite3.connect(DB_PATH)  #  # Connexion
         cursor = conn.cursor()  # Cr√©ation du curseur
-        cursor.execute('''  # Insert data
+        cursor.execute('''
             INSERT INTO top_movers (symbol, name, price, volume, change_24h)
             VALUES (?, ?, ?, ?, ?)
         ''', (symbol, name, price, volume, change_24h))
