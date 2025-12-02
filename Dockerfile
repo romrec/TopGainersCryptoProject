@@ -1,21 +1,21 @@
-# Utilise une image Python officielle
+# Use official Python image, slim version for smaller size
 FROM python:3.9-slim
 
-# Définit le répertoire de travail dans le conteneur
+# Set working directory in container to /app
 WORKDIR /app
 
-# Copie requirements.txt et installe les dépendances
+# Copy requirements.txt and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copie le reste du code de l'application
+# Copy the rest of the app code
 COPY . .
 
-# Crée un volume pour persister la DB et les logs
+# Create volume for DB and logs persistence
 VOLUME ["/app/data"]
 
-# Expose le port 8501 (port default de Streamlit) et 8000 (Prometheus)
+# Expose ports 8501 for Streamlit + 8000 for Prometheus
 EXPOSE 8501 8000
 
-# Commande à executer pour démarrer l'application (Prometheus démarre automatiquement dans l'app)
+# Command to start the app (Prometheus starts automatically in app)
 CMD ["streamlit", "run", "app.py", "--server.address", "0.0.0.0", "--server.port", "8501"]

@@ -1,25 +1,23 @@
-import logging
-from prometheus_client import start_http_server, Counter, Histogram
+import logging  # Logging module
+from prometheus_client import start_http_server, Counter, Histogram  # Metrics
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('/app/data/app.log'),
-        logging.StreamHandler()
+logging.basicConfig(  # Setup logging
+    level=logging.INFO,  # Info level
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Format
+    handlers=[  # Handlers
+        logging.FileHandler('/app/data/app.log'),  # File log
+        logging.StreamHandler()  # Console log
     ]
 )
 
-# Prometheus metrics
-ACCESS_COUNTER = Counter('app_requests_total', 'Total number of requests')
-ERROR_COUNTER = Counter('app_errors_total', 'Total number of errors')
-RESPONSE_TIME = Histogram('app_response_time_seconds', 'Response time in seconds', buckets=[0.1, 0.5, 1, 2, 5, 10])
+ACCESS_COUNTER = Counter('app_requests_total', 'Total requests')  # Requests counter
+ERROR_COUNTER = Counter('app_errors_total', 'Total errors')  # Errors counter
+RESPONSE_TIME = Histogram('app_response_time_seconds', 'Response time', buckets=[0.1, 0.5, 1, 2, 5, 10])  # Time histogram
 
-def log_access():
-    ACCESS_COUNTER.inc()
-    logging.info("Access logged")
+def log_access():  # Increment access
+    ACCESS_COUNTER.inc()  # Inc counter
+    logging.info("Access logged")  # Log info
 
-def log_error(msg):
-    ERROR_COUNTER.inc()
-    logging.error(msg)
+def log_error(msg):  # Increment error
+    ERROR_COUNTER.inc()  # Inc counter
+    logging.error(msg)  # Log error

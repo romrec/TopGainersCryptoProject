@@ -1,13 +1,12 @@
-import sqlite3
-import logging
+import sqlite3  # Import DB
+import logging  # Import logging
 
-DB_PATH = '/app/data/crypto_data.db'
+DB_PATH = '/app/data/crypto_data.db'  # Path to DB in volume
 
-def init_db():
-    """Initialize the database and create tables if they don't exist."""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('''
+def init_db():  # Init DB table
+    conn = sqlite3.connect(DB_PATH)  # Connect DB
+    cursor = conn.cursor()  # Create cursor
+    cursor.execute('''  # Create table if not exists
         CREATE TABLE IF NOT EXISTS top_movers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             symbol TEXT NOT NULL,
@@ -18,21 +17,20 @@ def init_db():
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    conn.commit()
-    conn.close()
-    logging.info("Database initialized.")
+    conn.commit()  # Save changes
+    conn.close()  # Close conn
+    logging.info("Database initialized.")  # Log init
 
-def save_to_db(symbol, name, price, volume, change_24h):
-    """Save a record to the database."""
+def save_to_db(symbol, name, price, volume, change_24h):  # Insert record
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute('''
+        conn = sqlite3.connect(DB_PATH)  # Connect DB
+        cursor = conn.cursor()  # Cursor for exec
+        cursor.execute('''  # Insert data
             INSERT INTO top_movers (symbol, name, price, volume, change_24h)
             VALUES (?, ?, ?, ?, ?)
-        ''', (symbol, name, price, volume, change_24h))
-        conn.commit()
-        conn.close()
-        logging.info(f"Saved {symbol} to DB.")
-    except Exception as e:
-        logging.error(f"Error saving to DB: {e}")
+        ''', (symbol, name, price, volume, change_24h))  # Params
+        conn.commit()  # Commit insert
+        conn.close()  # Close conn
+        logging.info(f"Saved {symbol} to DB.")  # Log save
+    except Exception as e:  # Handle error
+        logging.error(f"Error saving to DB: {e}")  # Log error

@@ -14,11 +14,11 @@ start_http_server(8000)
 st.title("Top Movers Crypto")
 st.write("Affichage des top gainer crypto avec stockage DB, monitoring et stats.")
 
-log_access()
+log_access()  # Incremente log access
 
-start_time = time.time()
-movers = get_top_movers()
-RESPONSE_TIME.observe(time.time() - start_time)
+start_time = time.time()  # Temps de debut
+movers = get_top_movers()  # Recup API
+RESPONSE_TIME.observe(time.time() - start_time)  # Mesure temps API
 
 # Afficher statistiques
 st.header("📊 Statistiques et Supervision")
