@@ -10,9 +10,9 @@ logging.basicConfig(  # Setup logging
     ]
 )
 
-ACCESS_COUNTER = Counter('app_requests_total', 'Total requests')  # Requests counter
-ERROR_COUNTER = Counter('app_errors_total', 'Total errors')  # Errors counter
-RESPONSE_TIME = Histogram('app_response_time_seconds', 'Response time', buckets=[0.1, 0.5, 1, 2, 5, 10])  # Time histogram
+ACCESS_COUNTER = Counter('app_requests_total', 'Nombre total de requêtes')  # Compteur requêtes
+ERROR_COUNTER = Counter('app_errors_total', 'Nombre total d\'erreurs')  # Compteur erreurs
+RESPONSE_TIME = Histogram('app_response_time_seconds', 'Temps de réponse', buckets=[0.1, 0.5, 1, 2, 5, 10])  # Histogramme temps
 
 def log_access():  # Increment access
     ACCESS_COUNTER.inc()  # Inc counter
