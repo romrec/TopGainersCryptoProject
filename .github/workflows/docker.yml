@@ -15,9 +15,9 @@ jobs:
 
     steps:
       # 1. Récupère le code du dépôt
-      - name: Checkout code
+      - name: Vérifier le code source
         uses: actions/checkout@v4
 
-      # 2. Construit l'image Docker (vérification que ça build bien)
-      - name: Build Docker image
+      # 2. Construit l'image Docker
+      - name: Construire l'image Docker
         run: docker build -t top-gainers-crypto .
