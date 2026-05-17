@@ -5,7 +5,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[  # Handlers
-        logging.FileHandler('/app/data/app.log'),  # Fichier log
+        logging.FileHandler('data/app.log'),  # Fichier log
         logging.StreamHandler()  # Console log
     ]
 )

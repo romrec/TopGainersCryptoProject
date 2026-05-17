@@ -47,7 +47,7 @@ if not api_disponible:
 # Afficher statistiques
 st.header("📊 Statistiques et Supervision")
 st.write("Données sauvegardées : ")
-conn = sqlite3.connect('/app/data/crypto_data.db')
+conn = sqlite3.connect('data/crypto_data.db')
 cursor = conn.cursor()
 cursor.execute("SELECT COUNT(*) FROM top_movers")
 count = cursor.fetchone()[0]
