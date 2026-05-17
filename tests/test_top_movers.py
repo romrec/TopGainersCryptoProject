@@ -54,8 +54,8 @@ class TestTopMovers(unittest.TestCase):
         self.assertIn('params', kwargs)
         params = kwargs['params']
         self.assertEqual(params['vs_currency'], 'usd')
-        self.assertEqual(params['order'], 'price_change_percentage_24h_desc')
-        self.assertEqual(params['per_page'], 10)
+        self.assertEqual(params['order'], 'market_cap_desc')
+        self.assertEqual(params['per_page'], 250)
         self.assertEqual(params['page'], 1)
         self.assertEqual(params['sparkline'], False)
         self.assertEqual(params['price_change_percentage'], '24h')
