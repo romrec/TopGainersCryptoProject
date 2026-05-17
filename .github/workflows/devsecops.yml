@@ -70,47 +70,13 @@ jobs:
         run: python -m pytest tests/ -v --tb=short
 
   # ─────────────────────────────────────────
-  # 4. Build Docker Image
+  # 4. Build Docker Image (vérifie que l'image se construit)
   # ─────────────────────────────────────────
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: [sast, sca, test]  # bloque si SAST/SCA/TESTS échouent
+    needs: [sast, sca, test]
     steps:
       - uses: actions/checkout@v4
       - name: Build image
-        run: docker build -t myapp:${{ github.sha }} .
-
-  # ─────────────────────────────────────────
-  # 5. Déploiement Streamlit Community Cloud
-  # ─────────────────────────────────────────
-  deploy-streamlit:
-    name: Deploy → Streamlit Cloud
-    runs-on: ubuntu-latest
-    needs: [test]  # déploiement dès que les tests passent
-    if: github.ref == 'refs/heads/main'  # uniquement sur main
-    steps:
-      - uses: actions/checkout@v4
-      - name: Notify deployment
-        run: |
-          echo "✅ Tests passés sur main"
-          echo "➡️ Déploiement automatique via Streamlit Community Cloud"
-          echo "📌 Lier le dépôt sur https://share.streamlit.io"
-          echo "   Dépôt : romrec/TopGainersCryptoProject"
-          echo "   Branche : main"
-          echo "   Fichier : app.py"
-
-  # ─────────────────────────────────────────
-  # 5. DAST — Scan dynamique (après déploiement)
-  # ─────────────────────────────────────────
-  dast:
-    name: DAST – OWASP ZAP
-    runs-on: ubuntu-latest
-    needs: deploy-streamlit
-    continue-on-error: true  # ne bloque pas tant que l'URL Streamlit n'est pas définie
-    steps:
-      - name: ZAP Full Scan
-        uses: zaproxy/action-full-scan@v0.10.0
-        with:
-          target: 'https://topgainerscrypto.streamlit.app'  # URL Streamlit Cloud (à confirmer)
-          fail_action: false  # informatif uniquement
+        run: docker build -t topgainerscrypto:${{ github.sha }} .
