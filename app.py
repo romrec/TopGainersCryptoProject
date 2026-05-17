@@ -82,7 +82,11 @@ cursor2.close()
 conn_stats.close()
 
 if rows:
-    st.table([{"#": i, "Symbole": row[0], "Nom": row[1], "Prix": f"${row[2]:.4f}", "Volume": f"{row[3]:.0f}", "Changement 24h": f"{row[4]:.2f}%", "Timestamp": row[5]} for i, row in enumerate(rows, 1)])
+    import pandas as pd
+    data = [{"Symbole": row[0], "Nom": row[1], "Prix": f"${row[2]:.4f}", "Volume": f"{row[3]:.0f}", "Changement 24h": f"{row[4]:.2f}%", "Timestamp": row[5]} for row in rows]
+    df = pd.DataFrame(data, index=range(1, len(rows)+1))
+    df.index.name = "#"
+    st.table(df)
 else:
     st.write("Aucune donnée sauvegardée.")
 
