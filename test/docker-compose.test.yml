@@ -11,3 +11,13 @@ services:
     environment:
       - PYTHONPATH=/app
     restart: unless-stopped
+
+  prometheus-test:
+    image: prom/prometheus:latest
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus.test.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    restart: unless-stopped
