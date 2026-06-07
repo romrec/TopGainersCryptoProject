@@ -24,8 +24,8 @@ jobs:
 
       - name: Run Snyk SAST
         uses: snyk/actions/node@master
-#        env:
-#          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}  # Configurer dans Settings > Secrets > Actions
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           command: code test
           args: --severity-threshold=high --sarif-file-output=snyk-sast.sarif
@@ -48,8 +48,8 @@ jobs:
 
       - name: Run Snyk SCA
         uses: snyk/actions/node@master
-#        env:
-#          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}  # Configurer dans Settings > Secrets > Actions
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           command: test
           args: --severity-threshold=high
