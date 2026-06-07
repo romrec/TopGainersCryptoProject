@@ -64,4 +64,4 @@ data/*.log
 *.xml
 
 # Docker
-.dockerignore
+.dockerignoredata-test/

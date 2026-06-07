@@ -1,0 +1,13 @@
+services:
+  top-gainers-crypto-test:
+    build:
+      context: ..
+      dockerfile: test/Dockerfile.test
+    ports:
+      - "8502:8502"
+      - "8001:8001"
+    volumes:
+      - ../data-test:/app/data
+    environment:
+      - PYTHONPATH=/app
+    restart: unless-stopped

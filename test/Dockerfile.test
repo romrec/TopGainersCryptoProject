@@ -1,0 +1,28 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Installation des dépendances système
+RUN apt-get update && apt-get install -y gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copie et installation des dépendances Python
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copie du code source
+COPY . .
+
+# Création d'un utilisateur non-root
+RUN adduser --disabled-password --gecos '' appuser \
+    && mkdir -p /app/data /app/logs \
+    && chown -R appuser:appuser /app
+
+USER appuser
+
+VOLUME ["/app/data"]
+
+EXPOSE 8502 8001
+
+# Lancement de l'application de test
+CMD ["streamlit", "run", "test/app_test.py", "--server.address", "0.0.0.0", "--server.port", "8502"]
