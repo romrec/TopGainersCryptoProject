@@ -68,6 +68,43 @@ Poussez un commit sur `main` ou `develop`, ou ouvrez une pull‑request. Vous po
 - Ajouter les identifiants du registre Docker comme secrets GitHub (`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, etc.) et étendre le workflow pour pousser l’image.
 - Remplacer l’étape de déploiement placeholder par votre script de déploiement réel.
 
+## Environnement de test (branche `dev`)
+
+Un environnement de test complet, dissocié de la prod, est disponible sur la branche `dev`.
+
+### Fichiers de test
+```
+TopGainersCryptoProject/
+├── test/
+│   ├── app_test.py               # Application avec données mockées
+│   ├── Dockerfile.test           # Dockerfile dédié au test
+│   └── docker-compose.test.yml   # Compose pour l'environnement test
+└── data-test/                    # Volume de données test (isolé)
+```
+
+### Lancer l'environnement de test
+```bash
+# Basculer sur la branche dev
+git checkout dev
+
+# Lancer les services de test
+docker compose -f test/docker-compose.test.yml up
+
+# Accès
+# - Interface Streamlit : http://localhost:8502
+# - Métriques Prometheus : http://localhost:8001/metrics
+```
+
+### Différences avec la prod
+
+| Caractéristique | Prod (main) | Test (dev) |
+|---|---|---|
+| API CoinGecko | Réelle | Données mockées (10 crypto factices) |
+| Port Streamlit | 8501 | 8502 |
+| Port Prometheus | 8000 | 8001 |
+| Base de données | `data/crypto_data.db` | `data-test/test.db` |
+| Commande | `docker compose up` | `docker compose -f test/docker-compose.test.yml up` |
+
 ## Tests
 ```bash
 python -m unittest discover tests -v
