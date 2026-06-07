@@ -34,13 +34,16 @@ MOCK_MOVERS = [
 
 init_db()
 
-# Prometheus sur port 8000 (inchangé)
+# Prometheus sur port 8001 (démarré une seule fois via le cache Streamlit)
 from prometheus_client import start_http_server as prom_start
-try:
-    prom_start(8000)
-    logging.info("[TEST] Serveur Prometheus démarré sur le port 8000")
-except OSError as e:
-    logging.warning(f"[TEST] Impossible démarrer Prometheus : {e}")
+@st.cache_resource
+def _start_prometheus():
+    try:
+        prom_start(8001)
+        logging.info("[TEST] Serveur Prometheus démarré sur le port 8001")
+    except OSError as e:
+        logging.warning(f"[TEST] Impossible démarrer Prometheus : {e}")
+_start_prometheus()
 
 st.title("🧪 Top Movers Crypto — ENVIRONNEMENT DE TEST")
 st.write("Données mockées — aucun appel API réel effectué.")
