@@ -11,7 +11,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from db import init_db, save_to_db, get_top_movers_from_db, DB_PATH
-from logging_conf import log_access, RESPONSE_TIME
+from logging_conf import log_access, log_api_call, log_api_response_time, log_db_record, RESPONSE_TIME
 
 # Base de test séparée
 TEST_DB_PATH = 'data/test.db'
@@ -54,9 +54,13 @@ start_time = time.time()
 time.sleep(0.1)
 movers = MOCK_MOVERS
 api_duration = time.time() - start_time
-RESPONSE_TIME.observe(api_duration)
 
-st.success("✅ API mockée — données factices utilisées")
+# Enregistrer les métriques simulées dans Prometheus
+RESPONSE_TIME.observe(api_duration)
+log_api_call('success')
+log_api_response_time(api_duration)
+
+st.success(f"✅ API mockée — données factices utilisées ({api_duration:.2f}s)")
 
 session_records = 0
 for coin in movers:
@@ -66,6 +70,7 @@ for coin in movers:
     volume = coin['total_volume']
     change = coin['price_change_percentage_24h']
     save_to_db(symbol, name, price, volume, change)
+    log_db_record()
     session_records += 1
 
 logging.info(f"[TEST] Session : {session_records} enregistrements sauvegardés en DB test")
