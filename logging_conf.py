@@ -1,3 +1,5 @@
+import os
+os.makedirs('data', exist_ok=True)
 import logging
 from prometheus_client import start_http_server, Counter, Histogram
 
