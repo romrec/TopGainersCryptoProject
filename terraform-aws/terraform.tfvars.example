@@ -1,0 +1,12 @@
+# Exemple de configuration Terraform - TopGainersCryptoProject
+# Copiez ce fichier en terraform.tfvars et remplissez les valeurs
+# IMPORTANT: Ne jamais commiter le fichier terraform.tfvars (contient des secrets)
+
+# Région AWS
+region = "eu-west-3"
+
+# Votre IP publique pour SSH (trouvez-la sur https://whatismyipaddress.com)
+my_ip = "VOTRE_IP_PUBLIQUE_SANS_SUFFIXE"
+
+# Chemin vers votre clé SSH publique
+ssh_public_key_path = "~/.ssh/id_rsa.pub"

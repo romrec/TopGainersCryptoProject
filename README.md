@@ -1,96 +1,149 @@
 # TopGainersCryptoProject
 
 ## Description
-Ce projet fournit des outils pour identifier les cryptomonnaies les plus performantes sur 24 h, avec une interface web Streamlit, du stockage SQLite, du monitoring Prometheus et des tests unitaires.
+Ce projet fournit des outils pour identifier les cryptomonnaies les plus performantes sur 24 h, avec une interface web Streamlit, du stockage PostgreSQL, du monitoring Prometheus/Grafana et des tests unitaires. Déploiement sur **Amazon Web Services (AWS)**.
 
 ## Fonctionnalités
 - Affichage en temps réel des 10 meilleures cryptomonnaies (gain sur 24 h)
 - Interface web simple avec Streamlit
-- Stockage persistant des données en SQLite
-- Métriques exposées à Prometheus
-- Support Docker
+- Stockage persistant des données en PostgreSQL
+- Métriques exposées à Prometheus (port 8000)
+- Interface Grafana avec dashboards provisionnés automatiquement
+- Alertes Prometheus (règles d'alerte)
+- Support Docker (docker-compose) et Kubernetes (k3s)
 - Tests unitaires complets
+- Déploiement automatisé via GitHub Actions
 
 ## Installation
 
 ### Prérequis
 - Python 3.9+
 - Git
+- Compte AWS avec accès Free Tier
+- Docker et Docker Compose
+- Terraform 1.5+
+- AWS CLI configuré
 
-### Démarrage rapide
+### Installation locale (Docker Compose)
 ```bash
 git clone https://github.com/romrec/TopGainersCryptoProject.git
 cd TopGainersCryptoProject
-pip install -r requirements.txt
-streamlit run app.py
+echo "DB_PASSWORD=change_me" > .env
+docker compose up -d --build
 ```
 
-### Avec Docker
+### Déploiement sur AWS (Terraform)
+
+#### Infrastructure Terraform
 ```bash
-docker build -t top-gainers-crypto .
-docker run -p 8501:8501 top-gainers-crypto
+cd terraform-aws
+cp terraform.tfvars.example terraform.tfvars
+# Remplir les variables dans terraform.tfvars :
+#   - region : Région AWS (ex: eu-west-3)
+#   - my_ip : Votre IP publique (pour SSH)
+#   - ssh_public_key_path : Chemin vers votre clé SSH publique
+
+AWS_PROFILE=topgainers terraform init
+AWS_PROFILE=topgainers terraform plan
+AWS_PROFILE=topgainers terraform apply -auto-approve
 ```
 
-## Utilisation
-
-### Développement local
+#### Accès à l'application
+Après le déploiement, récupérez l'IP publique avec :
 ```bash
-streamlit run app.py
-# ou avec rechargement à chaud
-streamlit run app.py --server.headless false
+AWS_PROFILE=topgainers terraform output instance_public_ip
 ```
 
-### Docker Compose
+- **Application Streamlit** : `http://<IP_PUBLIQUE>:8501`
+- **Prometheus** : `http://<IP_PUBLIQUE>:9090`
+- **Grafana** : `http://<IP_PUBLIQUE>:3000` (identifiants par défaut : admin/admin)
+- **SSH** : `ssh -i ~/.ssh/id_rsa ubuntu@<IP_PUBLIQUE>` (depuis votre IP uniquement)
+
+#### Workflow GitHub Actions
+Le déploiement est automatisé via GitHub Actions :
+- **CI** : tests unitaires + build multi-architecture (amd64/arm64)
+- **CD** : build de l'image Docker + push sur GHCR
+
+### Tests
 ```bash
-docker-compose up -d
-# arrêter
-docker-compose down
-```
-
-## Monitoring
-- Interface Streamlit : http://localhost:8501
-- Métriques Prometheus : http://localhost:8000/metrics
-- UI Prometheus : http://localhost:9090
-
-## CI/CD – Pipeline DevSecOps
-Un **pipeline DevSecOps** a été ajouté pour automatiser les contrôles de sécurité, la construction et le déploiement. Le fichier de workflow se trouve à `.github/workflows/devsecops.yml` et s’exécute à chaque push sur les branches `main` ou `develop` ainsi que sur les pull‑requests.
-
-### Étapes du pipeline
-1. **SAST** – Analyse statique du code avec **Snyk Code** (génère un rapport SARIF).
-2. **SCA** – Analyse des dépendances avec **Snyk Open Source**.
-3. **Build** – Construction de l’image Docker (`docker build -t myapp:${{ github.sha }}`).
-4. **DAST** – Scan dynamique avec **OWASP ZAP** sur l’URL de staging.
-
-### Déclencher le pipeline
-Poussez un commit sur `main` ou `develop`, ou ouvrez une pull‑request. Vous pouvez suivre l’exécution dans l’onglet **Actions** du dépôt.
-
-### Prochaines étapes
-- Ajouter les identifiants du registre Docker comme secrets GitHub (`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, etc.) et étendre le workflow pour pousser l’image.
-- Remplacer l’étape de déploiement placeholder par votre script de déploiement réel.
-
-## Tests
-```bash
-python -m unittest discover tests -v
+python -m pytest tests/ -v
 # tests spécifiques
-python -m unittest tests.test_top_movers -v
-python -m unittest tests.test_database -v
+python -m pytest tests/test_top_movers.py -v
+python -m pytest tests/test_database.py -v
 ```
+
+## Surveillance
+- Interface Streamlit : http://localhost:8501 (local) ou http://<IP>:8501 (AWS)
+- Métriques Prometheus : http://localhost:8000/metrics (local) ou http://<IP>:9090 (AWS)
+- UI Prometheus : http://localhost:9090 (local) ou http://<IP>:9090 (AWS)
+- Dashboard Grafana : http://localhost:3000 (local) ou http://<IP>:3000 (AWS)
+
+## Architecture
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Instance EC2 (t3.small)               │
+│                    2 vCPU / 2 GB RAM                     │
+│                    Ubuntu 22.04                          │
+└─────────────────────────────────────────────────────────┘
+  ┌─────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────┐
+  │  Streamlit  │  │  PostgreSQL  │  │  Prometheus  │  │ Grafana  │
+  │  app.py     │  │  db.py       │  │  :9090       │  │ :3000   │
+  │  :8501      │  │  :5432       │  │  metrics:8000│  │ dash   │
+  └─────────────┘  └──────────────┘  └──────────────┘  └──────────┘
+       │                  │                  │                │
+       └──────────────────┴──────────────────┴────────────────┘
+                           Docker Compose
+```
+
+## Sécurité
+- SSH restreint à votre IP publique uniquement
+- Pas de mot de passe, uniquement clé SSH
+- Les secrets sont stockés dans les GitHub Secrets
+- Le mot de passe PostgreSQL par défaut est `change_me` (à changer en production)
+- Le fichier `terraform.tfvars` contient des secrets et est gitignoré
 
 ## Structure du projet
 ```
 TopGainersCryptoProject/
-├── .github/
-│   └── workflows/
-│       └── devsecops.yml   # CI/CD GitHub Actions pour DevSecOps
+├── .gitignore
 ├── app.py
 ├── db.py
-├── docker-compose.yml
-├── Dockerfile
+├── top_movers.py
 ├── logging_conf.py
 ├── requirements.txt
-├── top_movers.py
-├── tests/
-│   ├── test_database.py
-│   └── test_top_movers.py
+├── Dockerfile
+├── docker-compose.yml
+├── docker-compose.app.yml
+├── docker-compose.monitoring.yml
+├── prometheus.yml
+├── prometheus/alert_rules.yml
+├── grafana/
+│   ├── provisioning/
+│   │   ├── datasources/
+│   │   │   └── prometheus.yml
+│   │   └── dashboards/
+│   │       └── dashboards.yml
+│   └── dashboards/
+│       └── topgainers-dashboard.json
+├── .github/
+│   └── workflows/
+│       └── docker.yml
+├── terraform-aws/
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   ├── terraform.tfvars
+│   ├── terraform.tfvars.example
+│   ├── user_data.sh
+│   └── README.md
+├── k8s/
+│   ├── namespace.yaml
+│   ├── postgres-secret.yaml
+│   ├── postgres-pvc.yaml
+│   ├── postgres-deployment.yaml
+│   ├── postgres-service.yaml
+│   ├── app-deployment.yaml
+│   ├── app-service.yaml
+│   └── README.md
 └── README.md
 ```

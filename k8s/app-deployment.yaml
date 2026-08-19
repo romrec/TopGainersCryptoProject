@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: topgainers-app
+  namespace: topgainers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: topgainers-app
+  template:
+    metadata:
+      labels:
+        app: topgainers-app
+    spec:
+      containers:
+        - name: topgainers-app
+          image: ghcr.io/romrec/topgainerscrypto:latest
+          ports:
+            - containerPort: 8501
+            - containerPort: 8000
+          env:
+            - name: DB_HOST
+              value: postgres-svc
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_DB
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD

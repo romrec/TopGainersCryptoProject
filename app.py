@@ -1,20 +1,34 @@
 import streamlit as st
-import sqlite3
+import os
+import logging
+import psycopg2
 from top_movers import get_top_movers
-from db import init_db, save_to_db, get_top_movers_from_db, DB_PATH
+from db import init_db, save_to_db, get_top_movers_from_db, get_latest_by_symbol
 from logging_conf import log_access, log_error, RESPONSE_TIME, start_http_server, log_api_call, log_api_response_time, log_db_record
 import time
 import logging
 
-# Initialize DB
-init_db()
+# Configuration de la base de données via variables d'environnement
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = int(os.getenv("DB_PORT", "5432"))
+DB_NAME = os.getenv("DB_NAME", "crypto_data")
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+DB_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-# Start Prometheus server
+# Initialize Prometheus server
 try:
     start_http_server(8000)
     logging.info("Serveur Prometheus démarré sur le port 8000")
 except OSError as e:
     logging.warning(f"Impossible démarrer serveur Prometheus : {e}")
+
+# Initialize database schema
+try:
+    init_db()
+    logging.info("Base de données initialisée avec succès")
+except Exception as e:
+    logging.error(f"Erreur initialisation DB : {e}")
 
 st.title("Top Movers Crypto")
 st.write("Affichage des top gainer crypto avec stockage DB, monitoring et stats.")
@@ -65,30 +79,40 @@ if not api_disponible:
 st.header("📊 Statistiques et Supervision")
 
 # Compter le nombre total en base (toutes sessions confondues)
-conn_stats = sqlite3.connect(DB_PATH)
-cursor_stats = conn_stats.cursor()
-cursor_stats.execute("SELECT COUNT(*) FROM top_movers")
-total_count = cursor_stats.fetchone()[0]
+try:
+    conn = psycopg2.connect(DB_URL, cursor_factory=None)
+    cursor_stats = conn.cursor()
+    cursor_stats.execute("SELECT COUNT(*) FROM top_movers")
+    total_count = cursor_stats.fetchone()[0]
+    conn.close()
+except Exception as e:
+    logging.error(f"Erreur connexion DB stats : {e}")
+    total_count = 0
 
 st.metric("📖 Enregistrements cette session", f"{session_records}")
 st.metric("📚 Total en base (toutes sessions)", f"{total_count}")
 
 # Afficher dernières sauvegardes
 st.subheader("💾 Dernières 10 données sauvegardées")
-cursor2 = conn_stats.cursor()
-cursor2.execute("SELECT symbol, name, price, volume, change_24h, timestamp FROM top_movers ORDER BY timestamp DESC LIMIT 10")
-rows = cursor2.fetchall()
-cursor2.close()
-conn_stats.close()
+try:
+    conn = psycopg2.connect(DB_URL, cursor_factory=None)
+    cursor2 = conn.cursor()
+    cursor2.execute("SELECT symbol, name, price, volume, change_24h, timestamp FROM top_movers ORDER BY timestamp DESC LIMIT 10")
+    rows = cursor2.fetchall()
+    cursor2.close()
+    conn.close()
 
-if rows:
-    import pandas as pd
-    data = [{"Symbole": row[0], "Nom": row[1], "Prix": f"${row[2]:.4f}", "Volume": f"{row[3]:.0f}", "Changement 24h": f"{row[4]:.2f}%", "Timestamp": row[5]} for row in rows]
-    df = pd.DataFrame(data, index=range(1, len(rows)+1))
-    df.index.name = "#"
-    st.table(df)
-else:
-    st.write("Aucune donnée sauvegardée.")
+    if rows:
+        import pandas as pd
+        data = [{"Symbole": row[0], "Nom": row[1], "Prix": f"${row[2]:.4f}", "Volume": f"{row[3]:.0f}", "Changement 24h": f"{row[4]:.2f}%", "Timestamp": row[5]} for row in rows]
+        df = pd.DataFrame(data, index=range(1, len(rows)+1))
+        df.index.name = "#"
+        st.table(df)
+    else:
+        st.write("Aucune donnée sauvegardée.")
+except Exception as e:
+    logging.error(f"Erreur affichage données : {e}")
+    st.write("Erreur affichage des données.")
 
 st.write(f"🕒 Temps de réponse API : {api_duration:.2f}s")
 st.write(f"📡 Appels API (cette session) : 1 — statut: {'succès' if api_disponible else 'échec'}")

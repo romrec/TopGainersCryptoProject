@@ -1,0 +1,29 @@
+groups:
+  - name: topgainers-alerts
+    rules:
+      - alert: ApplicationDown
+        expr: up{job="top-gainers-crypto"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "L'application TopGainers est injoignable"
+          description: "Le job top-gainers-crypto ne répond plus depuis plus d'une minute."
+
+      - alert: HighErrorRate
+        expr: rate(app_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Taux d'erreurs élevé"
+          description: "Le taux d'erreurs de l'application dépasse 0.1/s sur 5 minutes."
+
+      - alert: HighApiResponseTime
+        expr: histogram_quantile(0.95, rate(api_response_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Temps de réponse API élevé"
+          description: "Le 95e percentile du temps de réponse API dépasse 5 secondes."

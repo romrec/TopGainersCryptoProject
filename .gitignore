@@ -1,67 +1,36 @@
-# Logs
-*.log
-logs/
-*.log.*
+# Terraform
+terraform-aws/terraform.tfvars
+terraform-aws/terraform.tfvars.json
+terraform-aws/*.tfstate
+terraform-aws/*.tfstate.backup
+terraform-aws/.terraform/
+terraform-aws/crash.log
+terraform-aws/override.tf
+terraform-aws/override.tf.json
+terraform-aws/.terraform.lock.hcl
 
-# Environment variables
+# Fichiers sensibles
+*.pem
+*.key
+*.p12
+*.pfx
 .env
-.env.local
-.env.production
+**/.env
 
-# Python
+# Données
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# Virtual environments
-.env
-.venv
-env/
+*.pyc
+.venv/
 venv/
-ENV/
-env.bak/
-venv.bak/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Data
 data/*.db
-data/*.log
-*.csv
-*.json
-*.xml
+*.db
+cost_history.json
+data/
+data-test/
+terraform.tfstate
+terraform.tfstate.backup
 
-# Docker
-.dockerignore
+# Dossiers système
+.DS_Store
+Thumbs.db
+nul
