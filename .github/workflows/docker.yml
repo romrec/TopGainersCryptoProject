@@ -1,14 +1,12 @@
-# Nom du workflow (visible dans GitHub Actions)
 name: CI/CD Pipeline
 
-# Quand exécuter le workflow ?
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
-# Tâches à exécuter
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -54,6 +52,10 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Vérifier le code source
         uses: actions/checkout@v4
@@ -78,17 +80,14 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/topgainerscryptoproject:latest
 
   deploy:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    steps:
-      - name: Vérifier le code source
-        uses: actions/checkout@v4
 
+    steps:
       - name: Déployer sur EC2 (t3.micro Free Tier)
         uses: appleboy/ssh-action@v1.0.3
         with:
