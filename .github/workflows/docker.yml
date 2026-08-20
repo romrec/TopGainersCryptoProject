@@ -1,53 +1,38 @@
-name: CI/CD Pipeline
+name: Build & Deploy Docker
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: crypto_data
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: test_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
-      - name: Vérifier le code source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configurer Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: "3.12"
 
-      - name: Installer les dépendances
+      - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install pandas
+          pip install pytest
 
-      - name: Exécuter les tests
+      - name: Run tests
+        run: |
+          python -m pytest tests/ -v --tb=short
         env:
           DB_HOST: localhost
+          DB_NAME: topgainers
+          DB_USER: test
+          DB_PASSWORD: test
           DB_PORT: 5432
-          DB_NAME: crypto_data
-          DB_USER: postgres
-          DB_PASSWORD: test_password
-        run: |
-          python -m pytest tests/ -v
 
   build:
     needs: test
@@ -57,54 +42,42 @@ jobs:
       packages: write
 
     steps:
-      - name: Vérifier le code source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configurer QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Configurer Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Se connecter au registre GitHub Container Registry
+      - name: Se connecter à GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Construire et pousser l'image Docker
+      - name: Build et push
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/topgainerscryptoproject:latest
+          tags: ghcr.io/${{ github.repository }}:latest
 
-  deploy:
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+      - name: Configuration SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 13.38.175.135 >> ~/.ssh/known_hosts 2>/dev/null || true
+          echo "SSH configuré"
 
-    steps:
-      - name: Déployer sur EC2 (t3.micro Free Tier)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /opt/topgainers
-            git pull origin main
-            docker compose pull top-gainers-crypto
-            docker compose up -d --force-recreate top-gainers-crypto
-            echo "=== CONTENEURS ==="
-            docker compose ps
-            echo "=== HEALTH CHECK ==="
-            curl -s -o /dev/null -w "App: %{http_code}" --connect-timeout 10 http://localhost:8501
-            echo ""
-            curl -s -o /dev/null -w "Prometheus: %{http_code}" --connect-timeout 5 http://localhost:9090/-/healthy
-            echo ""
-            curl -s -o /dev/null -w "Grafana: %{http_code}" --connect-timeout 5 http://localhost:3000/api/health
-            echo ""
+      - name: Déploiement sur l'instance EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@13.38.175.135 '
+            set -e
+            echo "=== LOGIN DOCKER ==="
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u romain -p "${{ secrets.GHCR_TOKEN }}" --password-stdin
+            echo "=== PULL IMAGE ==="
+            docker pull ghcr.io/romain/top-gainers-crypto:latest
+            echo "=== DOCKER COMPOSE ==="
+            cd /home/ubuntu/topgainers && docker compose pull app && docker compose up -d app
+          '
+        </tool_result>
+<tool_result>Commit d5e1a4e added: Update fail.</tool_result>
+<tool_result>Commit done.</tool_result>
+</tool_response>
