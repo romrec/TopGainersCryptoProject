@@ -123,12 +123,12 @@ resource "aws_security_group" "main_sg" {
 }
 
 # ============ INSTANCE EC2 ============
-# t3.small : 2 vCPU / 2 GB RAM - suffisant pour Docker + PostgreSQL + Prometheus + Grafana
-# (t3.micro à 1 Go est Free Tier mais risque de manquer de RAM pour tous les services)
+# t3.micro : 1 vCPU / 1 GB RAM - Free Tier AWS (750h/mois pendant 12 mois)
+# Optimisé pour Docker + PostgreSQL + Prometheus + Grafana avec limites de mémoire
 
 resource "aws_instance" "topgainers_vm" {
   ami                         = data.aws_ami.ubuntu.id
-  instance_type               = "t3.small"
+  instance_type               = "t3.micro"
   subnet_id                   = aws_subnet.public_subnet.id
   vpc_security_group_ids      = [aws_security_group.main_sg.id]
   associate_public_ip_address = true

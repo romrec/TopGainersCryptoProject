@@ -12,7 +12,30 @@ Ce dossier contient la configuration Terraform pour déployer l'infrastructure T
 | **Route Table** | Routage du trafic vers l'Internet Gateway |
 | **Security Group** | Règles de pare-feu (SSH restreint, ports app/monitoring) |
 | **Key Pair** | Clé SSH pour accéder à la VM |
-| **Instance EC2** | `t2.micro` (1 vCPU / 1 Go RAM) — Free Tier |
+| **Instance EC2** | `t3.micro` (1 vCPU / 1 Go RAM) — **100% Free Tier** |
+
+## Optimisations pour t3.micro (1 Go RAM)
+
+Le projet est optimisé pour fonctionner sur une instance `t3.micro` gratuite :
+
+- **Limites mémoire Docker** : chaque conteneur a une limite stricte (`mem_limit`)
+- **Swap file 2 Go** : créé automatiquement par `user_data.sh` pour éviter les OOM
+- **PostgreSQL optimisé** : `shared_buffers=64MB`, `work_mem=4MB`, `maintenance_work_mem=16MB`
+- **Prometheus optimisé** : rétention réduite (6h / 100MB), `max-concurrency=4`
+- **Grafana optimisé** : analytics désactivés, logs en mode console warn
+- **Sysctl optimisé** : `swappiness=10`, `vfs_cache_pressure=50`, `overcommit_memory=1`
+
+### Budget mémoire estimé
+
+| Service | Limite mémoire |
+|---------|---------------|
+| Application Streamlit | 200 MB |
+| PostgreSQL | 200 MB |
+| Prometheus | 150 MB |
+| Grafana | 200 MB |
+| **Total conteneurs** | **750 MB** |
+| Système + Docker | ~250 MB |
+| **Total** | **~1 Go** ✅ |
 
 ## Prérequis
 

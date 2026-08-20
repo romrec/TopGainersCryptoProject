@@ -13,6 +13,29 @@ systemctl enable docker
 systemctl start docker
 usermod -aG docker ubuntu
 
+# Création d'un swap file (2 Go) - essentiel sur t3.micro (1 Go RAM)
+echo "=== CRÉATION DU SWAP FILE ==="
+if [ ! -f /swapfile ]; then
+    fallocate -l 2G /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile
+    swapon /swapfile
+    echo '/swapfile none swap sw 0 0' >> /etc/fstab
+    echo "Swap file de 2 Go créé et activé"
+else
+    echo "Swap file déjà existant"
+fi
+
+# Optimisation sysctl pour faible mémoire
+echo "=== OPTIMISATION SYSCTL ==="
+cat >> /etc/sysctl.conf << 'EOF'
+# Optimisations pour t3.micro (1 Go RAM)
+vm.swappiness=10
+vm.vfs_cache_pressure=50
+vm.overcommit_memory=1
+EOF
+sysctl -p
+
 # Clonage du projet
 mkdir -p /opt/topgainers
 cd /opt/topgainers
@@ -65,6 +88,11 @@ docker compose up -d --build top-gainers-crypto
 # Diagnostic : vérifier l'état des conteneurs
 echo "=== ÉTAT DES CONTENEURS ==="
 docker compose ps
+
+# Vérifier l'utilisation mémoire
+echo "=== UTILISATION MÉMOIRE ==="
+free -h
+docker stats --no-stream
 
 # Vérifier si Grafana est bien en écoute sur le port 3000
 echo "=== VÉRIFICATION GRAFANA ==="

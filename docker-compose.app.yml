@@ -13,6 +13,9 @@ services:
       - PYTHONPATH=/apps
     volumes:
       - ./data:/app/data
+    mem_limit: 200m
+    mem_reservation: 128m
+    cpus: 0.5
     restart: unless-stopped
 
   db:
@@ -21,8 +24,15 @@ services:
       POSTGRES_DB: crypto_data
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_SHARED_BUFFERS: 64MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 128MB
+      POSTGRES_WORK_MEM: 4MB
+      POSTGRES_MAINTENANCE_WORK_MEM: 16MB
     volumes:
       - pg_data:/var/lib/postgresql/data
+    mem_limit: 200m
+    mem_reservation: 128m
+    cpus: 0.5
     restart: unless-stopped
 
 volumes:

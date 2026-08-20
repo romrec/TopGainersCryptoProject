@@ -125,4 +125,3 @@ def get_latest_by_symbol(symbol):
         return None
     finally:
         conn.close()
-</write_to_file>

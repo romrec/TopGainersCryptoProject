@@ -8,6 +8,12 @@ services:
       - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=6h'
+      - '--storage.tsdb.retention.size=100MB'
+      - '--query.max-concurrency=4'
+    mem_limit: 150m
+    mem_reservation: 100m
+    cpus: 0.25
     restart: unless-stopped
 
   grafana:
@@ -20,7 +26,17 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=crypto_data
+      - GF_SERVER_HTTP_PORT=3000
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      - GF_LOG_MODE=console
+      - GF_LOG_LEVEL=warn
+      - GF_PANELS_DISABLE_SANITIZE_HTML=true
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
       - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+    mem_limit: 200m
+    mem_reservation: 128m
+    cpus: 0.25
     restart: unless-stopped

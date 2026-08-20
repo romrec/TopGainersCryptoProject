@@ -81,9 +81,9 @@ python -m pytest tests/test_database.py -v
 ## Architecture
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Instance EC2 (t3.small)               │
-│                    2 vCPU / 2 GB RAM                     │
-│                    Ubuntu 22.04                          │
+│                    Instance EC2 (t3.micro)               │
+│                    1 vCPU / 1 GB RAM (Free Tier)         │
+│                    Ubuntu 22.04 + Swap 2 Go              │
 └─────────────────────────────────────────────────────────┘
   ┌─────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────┐
   │  Streamlit  │  │  PostgreSQL  │  │  Prometheus  │  │ Grafana  │
