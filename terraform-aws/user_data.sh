@@ -82,8 +82,9 @@ for i in $(seq 1 15); do
     fi
 done
 
-# Démarrage de l'application avec build
-docker compose up -d --build top-gainers-crypto
+# Démarrage de l'application (image pullée depuis GHCR)
+docker compose pull top-gainers-crypto
+docker compose up -d top-gainers-crypto
 
 # Diagnostic : vérifier l'état des conteneurs
 echo "=== ÉTAT DES CONTENEURS ==="

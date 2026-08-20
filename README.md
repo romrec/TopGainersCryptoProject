@@ -59,10 +59,29 @@ AWS_PROFILE=topgainers terraform output instance_public_ip
 - **Grafana** : `http://<IP_PUBLIQUE>:3000` (identifiants par défaut : admin/admin)
 - **SSH** : `ssh -i ~/.ssh/id_rsa ubuntu@<IP_PUBLIQUE>` (depuis votre IP uniquement)
 
+#### Secrets GitHub requis
+Pour le déploiement automatisé, configurez ces secrets dans votre dépôt GitHub
+(Paramètres GitHub → Secrets and variables → Actions) :
+- **`EC2_HOST`** : IP publique de l'instance EC2
+- **`SSH_PRIVATE_KEY`** : Clé privée SSH pour se connecter à l'instance
+
+Récupérez l'IP après `terraform apply` :
+```bash
+AWS_PROFILE=topgainers terraform output instance_public_ip
+```
+
 #### Workflow GitHub Actions
-Le déploiement est automatisé via GitHub Actions :
-- **CI** : tests unitaires + build multi-architecture (amd64/arm64)
-- **CD** : build de l'image Docker + push sur GHCR
+Le déploiement est **entièrement automatisé** via GitHub Actions :
+- **CI** (sur chaque push/PR) : tests unitaires (pytest + PostgreSQL service)
+- **Build** (après tests) : build multi-arch Docker (amd64/arm64) + push sur `ghcr.io`
+- **Deploy** (sur push vers `main`) : SSH sur EC2 → pull image → redémarre conteneurs
+
+```
+push sur main → [test] → [build → GHCR] → [deploy → EC2]
+```
+
+La construction Docker se fait sur GitHub Actions (`ubuntu-latest`, plus rapide que t3.micro).
+L'instance EC2 **pull** l'image depuis GHCR — aucun build local nécessaire !
 
 ### Tests
 ```bash

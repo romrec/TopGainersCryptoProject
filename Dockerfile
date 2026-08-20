@@ -4,8 +4,8 @@ FROM python:3.9-slim
 # Définition du répertoire de travail dans le conteneur
 WORKDIR /app
 
-# Installation des dépendances système nécessaires à la compilation
-RUN apt-get update && apt-get install -y gcc \
+# Installation des dépendances système (libpq5 nécessaire à psycopg2-binary)
+RUN apt-get update && apt-get install -y libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copie et installation des dépendances Python
