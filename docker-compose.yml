@@ -1,6 +1,6 @@
 services:
   top-gainers-crypto:
-    image: ghcr.io/romrec/TopGainersCryptoProject:latest
+    image: ghcr.io/romrec/topgainerscryptoproject:latest
     pull_policy: always
     ports:
       - "8501:8501"
