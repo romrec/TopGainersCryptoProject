@@ -136,6 +136,12 @@ resource "aws_instance" "topgainers_vm" {
 
   user_data = file("${path.module}/user_data.sh")
 
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp3"
+    encrypted   = true
+  }
+
   tags = {
     Name = "topgainers-vm"
   }
