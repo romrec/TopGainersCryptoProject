@@ -8,6 +8,7 @@ terraform-aws/crash.log
 terraform-aws/override.tf
 terraform-aws/override.tf.json
 terraform-aws/.terraform.lock.hcl
+terraform-aws/.state-archive/
 
 # Fichiers sensibles
 *.pem

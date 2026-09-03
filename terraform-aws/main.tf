@@ -77,7 +77,10 @@ resource "aws_security_group" "main_sg" {
   description = "Security group pour TopGainersCrypto"
   vpc_id      = aws_vpc.main_vpc.id
 
-  # SSH (port 22) - restreint à l'IP admin
+  # SSH (port 22) - restreint à l'IP admin uniquement.
+  # NOTE : le workflow CI/CD autorise dynamiquement l'IP du runner GitHub
+  # pendant le déploiement (Authorize/Revoke) pour rester sous la limite
+  # AWS de 60 règles par security group.
   ingress {
     protocol    = "tcp"
     from_port   = 22
