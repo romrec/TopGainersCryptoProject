@@ -70,7 +70,6 @@ services:
       - GF_PANELS_DISABLE_SANITIZE_HTML=true
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
     mem_limit: 200m
     mem_reservation: 128m
     cpus: 0.25
