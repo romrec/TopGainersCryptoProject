@@ -93,7 +93,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     env:
-      EC2_HOST: 35.181.57.111
+      EC2_HOST: 15.236.133.211
       AWS_REGION: eu-west-3
       SG_NAME: topgainers-sg
 
