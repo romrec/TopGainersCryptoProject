@@ -135,5 +135,67 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(params, ('BTC',))
 
 
+# ─── Tests des branches d'erreur (couverture ≥ 80 %) ────────────────────
+
+    def test_init_db_without_connection(self):
+        """Test that init_db handles a missing database connection gracefully"""
+        self.mock_get_conn.return_value = None
+
+        init_db()
+
+        # Aucune requête ni fermeture ne doivent être tentées
+        self.mock_conn.cursor.assert_not_called()
+        self.mock_conn.close.assert_not_called()
+
+    def test_init_db_database_error(self):
+        """Test that init_db handles database errors gracefully"""
+        self.mock_cursor.execute.side_effect = Exception("Database error")
+
+        init_db()
+
+        # La connexion doit bien être fermée malgré l'erreur
+        self.mock_conn.close.assert_called_once()
+
+    def test_save_to_db_without_connection(self):
+        """Test that save_to_db returns False when no connection is available"""
+        self.mock_get_conn.return_value = None
+
+        result = save_to_db('BTC', 'Bitcoin', 50000.0, 1000000.0, 5.5)
+
+        self.assertFalse(result)
+
+    def test_get_top_movers_from_db_without_connection(self):
+        """Test that get_top_movers_from_db returns [] without a connection"""
+        self.mock_get_conn.return_value = None
+
+        result = get_top_movers_from_db()
+
+        self.assertEqual(result, [])
+
+    def test_get_top_movers_from_db_database_error(self):
+        """Test that get_top_movers_from_db returns [] on database error"""
+        self.mock_cursor.execute.side_effect = Exception("Database error")
+
+        result = get_top_movers_from_db()
+
+        self.assertEqual(result, [])
+
+    def test_get_latest_by_symbol_without_connection(self):
+        """Test that get_latest_by_symbol returns None without a connection"""
+        self.mock_get_conn.return_value = None
+
+        result = get_latest_by_symbol('BTC')
+
+        self.assertIsNone(result)
+
+    def test_get_latest_by_symbol_database_error(self):
+        """Test that get_latest_by_symbol returns None on database error"""
+        self.mock_cursor.execute.side_effect = Exception("Database error")
+
+        result = get_latest_by_symbol('BTC')
+
+        self.assertIsNone(result)
+
+
 if __name__ == '__main__':
     unittest.main()

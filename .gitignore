@@ -38,5 +38,7 @@ nul
 # Caches Python
 .pytest_cache/
 *.egg-info/
-build/
-dist/
+# Couverture de code
+.coverage
+coverage.xml
+htmlcov/
