@@ -92,24 +92,62 @@ jobs:
     name: Déploiement sur EC2 (SSH)
     needs: build
     runs-on: ubuntu-latest
+    env:
+      EC2_HOST: 35.181.57.111
+      AWS_REGION: eu-west-3
+      SG_NAME: topgainers-sg
 
     steps:
+      - name: Configurer les credentials AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Récupérer l'IP publique du runner
+        id: runner-ip
+        run: |
+          IP=$(curl -s https://api.ipify.org)
+          echo "runner_ip=$IP" >> "$GITHUB_OUTPUT"
+          echo "IP du runner : $IP"
+
+      - name: Autoriser l'accès SSH depuis le runner
+        id: authorize
+        run: |
+          SG_ID=$(aws ec2 describe-security-groups \
+            --filters "Name=group-name,Values=${{ env.SG_NAME }}" \
+            --query "SecurityGroups[0].GroupId" --output text)
+          echo "sg_id=$SG_ID" >> "$GITHUB_OUTPUT"
+          aws ec2 authorize-security-group-ingress \
+            --group-id "$SG_ID" \
+            --ip-permissions "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=${{ steps.runner-ip.outputs.runner_ip }}/32}]" \
+            --no-dry-run >/dev/null
+          echo "Accès SSH autorisé pour ${{ steps.runner-ip.outputs.runner_ip }}/32"
+
       - name: Configurer SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 13.38.175.135 >> ~/.ssh/known_hosts 2>/dev/null || true
-          echo "SSH configuré"
+          ssh-keyscan -H ${{ env.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          echo "SSH configuré vers ${{ env.EC2_HOST }}"
 
       - name: Déploiement sur l'instance EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@13.38.175.135 '
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_HOST }} '
             set -e
-            echo "=== LOGIN GHCR ==="
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u romain --password-stdin
-            echo "=== PULL IMAGE ==="
+            echo "=== PULL IMAGE (GHCR publique) ==="
             docker pull ${{ env.IMAGE_NAME }}:latest
             echo "=== RESTART COMPOSE ==="
-            cd /home/ubuntu/topgainers && docker compose pull app && docker compose up -d app
+            cd /opt/topgainers && docker compose pull top-gainers-crypto && docker compose up -d top-gainers-crypto
           '
+
+      - name: Révoquer l'accès SSH
+        if: always()
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id "${{ steps.authorize.outputs.sg_id }}" \
+            --ip-permissions "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=${{ steps.runner-ip.outputs.runner_ip }}/32}]" \
+            >/dev/null 2>&1 || echo "Réponse du SG déjà supprimée"
+          echo "Accès SSH révoqué pour ${{ steps.runner-ip.outputs.runner_ip }}/32"
