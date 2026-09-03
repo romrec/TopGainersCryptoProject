@@ -115,5 +115,26 @@ class TestTopMovers(unittest.TestCase):
         mock_get.assert_called_once()
 
 
+    @patch('top_movers.requests.get')
+    def test_get_top_movers_timeout(self, mock_get):
+        """Test timeout during API call"""
+        mock_get.side_effect = requests.exceptions.Timeout("Timeout")
+
+        result = get_top_movers()
+
+        self.assertEqual(result, [])
+        mock_get.assert_called_once()
+
+    @patch('top_movers.requests.get')
+    def test_get_top_movers_unexpected_error(self, mock_get):
+        """Test unexpected error during API call"""
+        mock_get.side_effect = Exception("Unexpected error")
+
+        result = get_top_movers()
+
+        self.assertEqual(result, [])
+        mock_get.assert_called_once()
+
+
 if __name__ == '__main__':
     unittest.main()
