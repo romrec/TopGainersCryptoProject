@@ -137,9 +137,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_HOST }} '
             set -e
-            echo "=== LOGIN GHCR ==="
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u romain --password-stdin
-            echo "=== PULL IMAGE ==="
+            echo "=== PULL IMAGE (GHCR publique) ==="
             docker pull ${{ env.IMAGE_NAME }}:latest
             echo "=== RESTART COMPOSE ==="
             cd /opt/topgainers && docker compose pull top-gainers-crypto && docker compose up -d top-gainers-crypto
