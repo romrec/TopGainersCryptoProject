@@ -13,13 +13,6 @@ scrape_configs:
     scrape_interval: 10s
     scrape_timeout: 5s
 
-  - job_name: 'top-gainers-crypto-local'
-    static_configs:
-      - targets: ['host.docker.internal:8000']
-    metrics_path: '/metrics'
-    scrape_interval: 10s
-    scrape_timeout: 5s
-
   - job_name: "prometheus"
     static_configs:
       - targets: ["localhost:9090"]
