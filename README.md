@@ -184,13 +184,12 @@ TopGainersCryptoProject/
 ├── prometheus.yml
 ├── prometheus/alert_rules.yml
 ├── grafana/
-│   ├── provisioning/
-│   │   ├── datasources/
-│   │   │   └── prometheus.yml
-│   │   └── dashboards/
-│   │       └── dashboards.yml
-│   └── dashboards/
-│       └── topgainers-dashboard.json
+│   └── provisioning/
+│       ├── datasources/
+│       │   └── prometheus.yml
+│       └── dashboards/
+│           ├── dashboards.yml
+│           └── topgainers-dashboard.json
 ├── .github/
 │   └── workflows/
 │       └── docker.yml
