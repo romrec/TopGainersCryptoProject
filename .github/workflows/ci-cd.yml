@@ -185,8 +185,9 @@ jobs:
           aws ec2 authorize-security-group-ingress \
             --group-id "$SG_ID" \
             --ip-permissions "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=${{ steps.runner-ip.outputs.runner_ip }}/32}]" \
-            --no-dry-run >/dev/null
-          echo "Accès SSH autorisé pour ${{ steps.runner-ip.outputs.runner_ip }}/32"
+            --no-dry-run >/dev/null 2>&1 \
+            || echo "Regle SSH deja presente pour cette IP (ignore)"
+          echo "Acces SSH autorise pour ${{ steps.runner-ip.outputs.runner_ip }}/32"
 
       - name: Configurer SSH
         run: |
