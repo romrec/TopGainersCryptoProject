@@ -88,6 +88,32 @@ jobs:
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
 
+      - name: Vérifier que l image publiée sur GHCR marche (smoke test)
+        run: |
+          echo "=== Pull de l image publiée ==="
+          docker pull ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+          echo "=== Démarrage conteneur de vérification ==="
+          docker run --rm -d \
+            --name smoke-test \
+            -p 127.0.0.1:8501:8501 \
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+          echo "=== Attente que l application réponde ==="
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8501/_stcore/health >/dev/null 2>&1; then
+              echo "OK : image publiée et accessible sur le port 8501 (SHA: ${{ github.sha }})"
+              docker rm -f smoke-test
+              exit 0
+            fi
+            sleep 2
+            echo "   ... pas encore prêt ($i/30)"
+          done
+
+          echo "FAILED : l image ne répond pas en 60s" >&2
+          docker rm -f smoke-test
+          exit 1
+
   deploy:
     name: Déploiement sur EC2 (SSH)
     needs: build
