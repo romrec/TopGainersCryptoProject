@@ -119,9 +119,16 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     env:
-      EC2_HOST: 15.236.133.211
+      # IP de l'instance EC2 cible.
+      # Surchargeable par une variable GitHub Actions "EC2_HOST"
+      # (Settings > Secrets and variables > Actions > Variables),
+      # sinon le secret "EC2_HOST" est utilisé en repli.
+      EC2_HOST: ${{ vars.EC2_HOST || secrets.EC2_HOST }}
       AWS_REGION: eu-west-3
       SG_NAME: topgainers-sg
+      APP_DIR: /opt/topgainers
+      # Tag AWS de l'instance cible, utilise pour resoudre l'IP publique.
+      INSTANCE_TAG_NAME: topgainers-vm
 
     steps:
       - name: Configurer les credentials AWS
@@ -130,6 +137,36 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Resoudre l'adresse IP de l'instance
+        id: resolve-host
+        run: |
+          set -euo pipefail
+
+          # Source de verite : AWS. L'IP est lue a chaque run depuis l'instance
+          # tagguee, ce qui survit aux reconstructions d'instance (cause historique
+          # des echecs de deploiement : IP obsolete codee en dur).
+          IP=$(aws ec2 describe-instances \
+            --region "${{ env.AWS_REGION }}" \
+            --filters "Name=tag:Name,Values=${{ env.INSTANCE_TAG_NAME }}" \
+                      "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].PublicIpAddress" \
+            --output text 2>/dev/null | tr '\t' '\n' | grep -E '^[0-9]+\.' | head -n 1 || true)
+
+          if [ -n "$IP" ]; then
+            echo "IP resolue via AWS (tag ${{ env.INSTANCE_TAG_NAME }}) : $IP"
+          else
+            IP="${{ env.EC2_HOST }}"
+            if [ -z "$IP" ]; then
+              echo "ERROR : impossible de resoudre l'IP de l'instance cible" >&2
+              echo "  - l'instance tagguee ${{ env.INSTANCE_TAG_NAME }} est-elle 'running' ?" >&2
+              echo "  - la variable GitHub Actions EC2_HOST est-elle definie ?" >&2
+              exit 1
+            fi
+            echo "IP resolue via la variable GitHub Actions EC2_HOST : $IP"
+          fi
+
+          echo "host=$IP" >> "$GITHUB_OUTPUT"
 
       - name: Récupérer l'IP publique du runner
         id: runner-ip
@@ -156,18 +193,48 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ env.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
-          echo "SSH configuré vers ${{ env.EC2_HOST }}"
+          ssh-keyscan -H ${{ steps.resolve-host.outputs.host }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          echo "SSH configuré vers ${{ steps.resolve-host.outputs.host }}"
 
       - name: Déploiement sur l'instance EC2
+        env:
+          DEPLOY_TIMEOUT: "300"
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_HOST }} '
+          set -euo pipefail
+
+          echo "=== 1. Test de connectivité SSH vers ${{ steps.resolve-host.outputs.host }} ==="
+          if ! timeout 20 ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 \
+               -i ~/.ssh/id_rsa ubuntu@${{ steps.resolve-host.outputs.host }} 'echo SSH_OK'; then
+            echo "ERROR : SSH injoignable sur ${{ steps.resolve-host.outputs.host }}" >&2
+            echo "  - L'instance est-elle toujours 'running' ?" >&2
+            echo "  - Le Security Group autorise-t-il le port 22 depuis le runner ?" >&2
+            echo "  - secrets.SSH_PRIVATE_KEY correspond-il a la cle de l'instance ?" >&2
+            exit 1
+          fi
+
+          echo "=== 2. PULL IMAGE + RESTART COMPOSE ==="
+          timeout "$DEPLOY_TIMEOUT" ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ steps.resolve-host.outputs.host }} "
             set -e
-            echo "=== PULL IMAGE (GHCR publique) ==="
+            cd ${{ env.APP_DIR }}
             docker pull ${{ env.IMAGE_NAME }}:latest
-            echo "=== RESTART COMPOSE ==="
-            cd /opt/topgainers && docker compose pull top-gainers-crypto && docker compose up -d top-gainers-crypto
-          '
+            docker compose pull top-gainers-crypto
+            docker compose up -d top-gainers-crypto
+            echo '--- Conteneurs ---'
+            docker compose ps
+          "
+
+          echo "=== 3. Verification de sante de l application ==="
+          for i in $(seq 1 30); do
+            if curl -fsS http://${{ steps.resolve-host.outputs.host }}:8501/_stcore/health >/dev/null 2>&1; then
+              echo "OK : application joignable sur le port 8501"
+              exit 0
+            fi
+            sleep 2
+            echo "   ... pas encore pret ($i/30)"
+          done
+
+          echo "FAILED : l application ne repond pas sur le port 8501" >&2
+          exit 1
 
       - name: Révoquer l'accès SSH
         if: always()
